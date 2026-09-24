@@ -87,6 +87,7 @@ fn detect_venv(target: &Target) -> Result<PathBuf> {
         use `maturin build` and `pip install <path/to/wheel>` instead."
     )
 }
+
 #[cfg(test)]
 mod tests {
     use super::normalize_windows_msys_path;
@@ -109,7 +110,7 @@ mod tests {
         for path in [
             "/home/user/project/.venv",
             "C:/Users/user/project/.venv",
-            "C:\\\\Users\\\\user\\\\project\\\\.venv",
+            r"C:\Users\user\project\.venv",
             "//server/share/.venv",
         ] {
             let path = PathBuf::from(path);
