@@ -2,6 +2,7 @@
 
 ## 1.15.0
 
+* Fix `maturin develop` with Git Bash virtualenv paths on Windows
 * Set `UV_PYTHON` when running `maturin develop` with uv ([#3236](https://github.com/pyo3/maturin/pull/3236))
 * Set UID and GID headers in pax ([#3241](https://github.com/pyo3/maturin/pull/3241))
 * Replace unguarded panics with explicit errors on fallible input ([#3242](https://github.com/pyo3/maturin/pull/3242))
