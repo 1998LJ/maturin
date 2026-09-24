@@ -12,11 +12,40 @@ pub fn develop_cmd(develop_options: DevelopOptions) -> Result<()> {
     Ok(())
 }
 
+fn normalize_windows_msys_path(path: PathBuf) -> PathBuf {
+    let Some(path_str) = path.to_str() else {
+        return path;
+    };
+    let bytes = path_str.as_bytes();
+    if bytes.len() >= 3
+        && bytes[0] == b'/'
+        && bytes[1].is_ascii_alphabetic()
+        && bytes[2] == b'/'
+    {
+        let drive = (bytes[1] as char).to_ascii_uppercase();
+        PathBuf::from(format!("{drive}:{}", &path_str[2..]))
+    } else {
+        path
+    }
+}
+
+fn venv_path_from_env(name: &str) -> Option<PathBuf> {
+    env::var_os(name).map(PathBuf::from).map(|path| {
+        if cfg!(windows) {
+            normalize_windows_msys_path(path)
+        } else {
+            path
+        }
+    })
+}
+
 fn detect_venv(target: &Target) -> Result<PathBuf> {
-    match (env::var_os("VIRTUAL_ENV"), env::var_os("CONDA_PREFIX")) {
-        (Some(dir), None) => return Ok(PathBuf::from(dir)),
-        (None, Some(dir)) => return Ok(PathBuf::from(dir)),
-        (Some(venv), Some(conda)) if venv == conda => return Ok(PathBuf::from(venv)),
+    let virtual_env = venv_path_from_env("VIRTUAL_ENV");
+    let conda_prefix = venv_path_from_env("CONDA_PREFIX");
+    match (virtual_env, conda_prefix) {
+        (Some(dir), None) => return Ok(dir),
+        (None, Some(dir)) => return Ok(dir),
+        (Some(venv), Some(conda)) if venv == conda => return Ok(venv),
         (Some(_), Some(_)) => {
             bail!("Both VIRTUAL_ENV and CONDA_PREFIX are set. Please unset one of them")
         }
@@ -57,4 +86,34 @@ fn detect_venv(target: &Target) -> Result<PathBuf> {
         See https://virtualenv.pypa.io/en/latest/index.html on how to use virtualenv or \
         use `maturin build` and `pip install <path/to/wheel>` instead."
     )
+}
+#[cfg(test)]
+mod tests {
+    use super::normalize_windows_msys_path;
+    use std::path::PathBuf;
+
+    #[test]
+    fn normalizes_msys_drive_paths() {
+        assert_eq!(
+            normalize_windows_msys_path(PathBuf::from("/c/Users/lifr0m/project/.venv")),
+            PathBuf::from("C:/Users/lifr0m/project/.venv")
+        );
+        assert_eq!(
+            normalize_windows_msys_path(PathBuf::from("/D/work/project/.venv")),
+            PathBuf::from("D:/work/project/.venv")
+        );
+    }
+
+    #[test]
+    fn leaves_non_msys_paths_unchanged() {
+        for path in [
+            "/home/user/project/.venv",
+            "C:/Users/user/project/.venv",
+            "C:\\\\Users\\\\user\\\\project\\\\.venv",
+            "//server/share/.venv",
+        ] {
+            let path = PathBuf::from(path);
+            assert_eq!(normalize_windows_msys_path(path.clone()), path);
+        }
+    }
 }
