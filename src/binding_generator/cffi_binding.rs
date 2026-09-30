@@ -53,7 +53,7 @@ impl<'a> BindingGenerator for CffiBindingGenerator<'a> {
             // https://cffi.readthedocs.io/en/stable/embedding.html#issues-about-using-the-so
             super::cdylib_filename(extension_name, context.project.target.target_os())
         };
-        let base_path = if context.project.project_layout.python_module.is_some() {
+        let base_path = if context.project.project_layout.has_python() {
             module.join(&context.project.project_layout.extension_name)
         } else {
             module.to_path_buf()
