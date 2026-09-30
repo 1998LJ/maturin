@@ -420,7 +420,7 @@ where
     }
 
     // 4. Install type stubs
-    if context.project.project_layout.python_module.is_none() {
+    if !context.project.project_layout.has_python() {
         let ext_name = &context.project.project_layout.extension_name;
         let type_stub = context
             .project
