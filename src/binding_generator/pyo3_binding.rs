@@ -130,7 +130,7 @@ impl<'a> BindingGenerator for Pyo3BindingGenerator<'a> {
         };
 
         let mut additional_files = HashMap::new();
-        if context.project.project_layout.python_module.is_some() {
+        if context.project.project_layout.has_python() {
             if let Some(mut stubs_files) = stubs_files {
                 if stubs_files.len() == 1
                     && let Some(init_stub_content) = stubs_files.remove(Path::new("__init__.pyi"))
