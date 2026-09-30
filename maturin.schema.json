@@ -149,6 +149,11 @@
         "null"
       ]
     },
+    "pgo": {
+      "description": "Enable Profile-Guided Optimization (PGO) builds.",
+      "type": "boolean",
+      "default": false
+    },
     "pgo-command": {
       "description": "Command to run for PGO profile generation.\nExecuted in a temporary virtualenv with the instrumented wheel installed.\nExample: `python -m pytest tests/benchmarks`",
       "type": [
