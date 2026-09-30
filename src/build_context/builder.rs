@@ -103,6 +103,7 @@ impl BuildContextBuilder {
             explicit_pyproject_path,
         )?;
         let pyproject = pyproject_toml.as_ref();
+        let pgo = pgo || pyproject.map(|p| p.pgo()).unwrap_or_default();
 
         let bindings = build_options.python.bindings.or_else(|| {
             pyproject.and_then(|x| {
@@ -256,7 +257,7 @@ impl BuildContextBuilder {
                 .filter(|s| !s.is_empty());
             if cmd.is_none() {
                 bail!(
-                    "--pgo requires a non-empty `pgo-command` to be set in `[tool.maturin]` in pyproject.toml"
+                    "PGO requires a non-empty `pgo-command` to be set in `[tool.maturin]` in pyproject.toml"
                 );
             }
             cmd
