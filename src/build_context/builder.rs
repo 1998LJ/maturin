@@ -103,7 +103,7 @@ impl BuildContextBuilder {
             explicit_pyproject_path,
         )?;
         let pyproject = pyproject_toml.as_ref();
-        let pgo = pgo || pyproject.map(|p| p.pgo()).unwrap_or_default();
+        let pgo = resolve_pgo(pgo, pyproject);
 
         let bindings = build_options.python.bindings.or_else(|| {
             pyproject.and_then(|x| {
@@ -344,6 +344,11 @@ impl BuildContextBuilder {
             has_import_lib_support,
         );
         resolver.resolve()
+    }
+
+    /// Resolve PGO enablement from CLI + pyproject.toml.
+    fn resolve_pgo(cli_pgo: bool, pyproject: Option<&PyProjectToml>) -> bool {
+        cli_pgo || pyproject.map(|p| p.pgo()).unwrap_or_default()
     }
 
     /// Resolve strip, debuginfo, and auditwheel mode from CLI + pyproject.toml.
@@ -632,6 +637,33 @@ mod tests {
             #[cfg(feature = "zig")]
             false,
         )
+    }
+
+    #[test]
+    fn resolve_pgo_defaults_to_disabled() {
+        assert!(!BuildContextBuilder::resolve_pgo(false, None));
+    }
+
+    #[test]
+    fn resolve_pgo_uses_cli_flag() {
+        assert!(BuildContextBuilder::resolve_pgo(true, None));
+    }
+
+    #[test]
+    fn resolve_pgo_uses_pyproject_setting() {
+        let pyproject: PyProjectToml = toml::from_str(
+            r#"
+            [build-system]
+            requires = ["maturin"]
+            build-backend = "maturin"
+
+            [tool.maturin]
+            pgo = true
+            "#,
+        )
+        .unwrap();
+
+        assert!(BuildContextBuilder::resolve_pgo(false, Some(&pyproject)));
     }
 
     #[test]
