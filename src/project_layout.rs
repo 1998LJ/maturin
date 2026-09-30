@@ -406,9 +406,9 @@ impl ProjectLayout {
         self.python_module.is_some() || !self.python_packages.is_empty()
     }
 
-    /// Directory the wheel's contents are resolved against, for a mixed python/rust project.
+    /// Directory the wheel's contents are resolved against when the extension lives in a Python package.
     ///
-    /// `None` for a pure Rust project, where there is no python source tree to be relative to.
+    /// `None` for pure Rust projects and for mixed projects with a top-level extension.
     pub fn base_path(&self) -> Option<PathBuf> {
         self.python_module
             .as_ref()
@@ -419,8 +419,9 @@ impl ProjectLayout {
     ///
     /// For `module-name = "a.b.c"` in a mixed project this is `a/b`, so that anything placed
     /// alongside the extension — the `.so`, its type stubs — lands in the same package the
-    /// extension is imported from. For a pure Rust project it is the extension name, which is the
-    /// package maturin generates around it.
+    /// extension is imported from. For a mixed project with a top-level extension this is empty,
+    /// placing the extension at the wheel root. For a pure Rust project it is the extension name,
+    /// which is the package maturin generates around it.
     pub fn module_dir(&self) -> PathBuf {
         match self.base_path() {
             Some(base_path) => self
@@ -543,7 +544,6 @@ impl ProjectLayout {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -572,5 +572,49 @@ mod tests {
         assert_eq!(layout.python_module, None);
         assert_eq!(layout.module_dir(), PathBuf::new());
         assert_eq!(layout.base_path(), None);
+    }
+
+    #[test]
+    fn pure_rust_project_keeps_generated_package_directory() {
+        let tmp = TempDir::new().unwrap();
+        let project_root = tmp.path();
+
+        let layout = ProjectLayout::determine(
+            project_root,
+            "native_module",
+            project_root.to_path_buf(),
+            Vec::new(),
+            None,
+            false,
+        )
+        .unwrap();
+
+        assert!(!layout.has_python());
+        assert_eq!(layout.module_dir(), PathBuf::from("native_module"));
+    }
+
+    #[test]
+    fn nested_mixed_extension_keeps_package_directory() {
+        let tmp = TempDir::new().unwrap();
+        let project_root = tmp.path();
+        let python_root = project_root.join("src");
+        let package = python_root.join("package");
+        std::fs::create_dir_all(&package).unwrap();
+        std::fs::write(package.join("__init__.py"), "").unwrap();
+
+        let layout = ProjectLayout::determine(
+            project_root,
+            "package._native",
+            python_root.clone(),
+            Vec::new(),
+            None,
+            true,
+        )
+        .unwrap();
+
+        assert!(layout.has_python());
+        assert_eq!(layout.python_module, Some(package));
+        assert_eq!(layout.base_path(), Some(python_root));
+        assert_eq!(layout.module_dir(), PathBuf::from("package"));
     }
 }
