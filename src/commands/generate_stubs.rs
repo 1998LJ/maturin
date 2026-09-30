@@ -40,8 +40,8 @@ pub fn generate_stubs(
         if stubs.len() == 1
             && let Some(stub) = stubs.remove(Path::new("__init__.pyi"))
         {
-            // Special case, we generate just a `extension_name.pyi` file instead of a __init__.pyi
-            // file: the extension is one module inside an existing package, not a package itself.
+            // Special case: the extension is a module rather than a maturin-generated
+            // package, so write `extension_name.pyi` instead of `__init__.pyi`.
             write_stub(&module_dir.join(format!("{extension_name}.pyi")), &stub)?;
         } else {
             // We copy the files into a `extension_name` directory
