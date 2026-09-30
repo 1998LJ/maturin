@@ -430,6 +430,9 @@ pub struct ToolMaturin {
     /// Include the import library (.dll.lib) in the wheel on Windows
     #[serde(default)]
     pub include_import_lib: bool,
+    /// Enable Profile-Guided Optimization (PGO) builds.
+    #[serde(default)]
+    pub pgo: bool,
     /// Command to run for PGO profile generation.
     /// Executed in a temporary virtualenv with the instrumented wheel installed.
     /// Example: `python -m pytest tests/benchmarks`
@@ -593,6 +596,11 @@ impl PyProjectToml {
     /// Returns the value of `[tool.maturin.bindings]` in pyproject.toml
     pub fn bindings(&self) -> Option<Bindings> {
         self.maturin()?.bindings
+    }
+
+    /// Returns whether PGO is enabled in `[tool.maturin]`
+    pub fn pgo(&self) -> bool {
+        self.maturin().map(|m| m.pgo).unwrap_or_default()
     }
 
     /// Returns the PGO training command from `[tool.maturin]`
@@ -1310,11 +1318,13 @@ mod tests {
             build-backend = "maturin"
 
             [tool.maturin]
+            pgo = true
             pgo-command = "python -m pytest tests/benchmarks"
             "#,
         )
         .unwrap();
         let pyproject = PyProjectToml::new(pyproject_file).unwrap();
+        assert!(pyproject.pgo());
         assert_eq!(
             pyproject.pgo_command(),
             Some("python -m pytest tests/benchmarks")
@@ -1338,6 +1348,7 @@ mod tests {
         )
         .unwrap();
         let pyproject = PyProjectToml::new(pyproject_file).unwrap();
+        assert!(!pyproject.pgo());
         assert_eq!(pyproject.pgo_command(), None);
     }
 }
