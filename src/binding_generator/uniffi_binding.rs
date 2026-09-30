@@ -32,7 +32,7 @@ impl BindingGenerator for UniFfiBindingGenerator {
         artifact: &BuildArtifact,
         module: &Path,
     ) -> Result<GeneratorOutput> {
-        let base_path = if context.project.project_layout.python_module.is_some() {
+        let base_path = if context.project.project_layout.has_python() {
             module.join(&context.project.project_layout.extension_name)
         } else {
             module.to_path_buf()
