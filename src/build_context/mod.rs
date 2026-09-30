@@ -99,7 +99,7 @@ pub struct ArtifactContext {
     pub include_debuginfo: bool,
     /// Current PGO build phase (if PGO is enabled)
     pub pgo_phase: Option<PgoPhase>,
-    /// PGO training command from pyproject.toml (only set when --pgo is passed)
+    /// PGO training command from pyproject.toml (only set when PGO is enabled)
     pub pgo_command: Option<String>,
     /// Auto generate Python type stubs by introspecting the binary. Requires PyO3 and its "experimental-inspect" feature
     pub generate_stubs: bool,
