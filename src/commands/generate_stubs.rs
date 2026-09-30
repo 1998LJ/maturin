@@ -36,7 +36,7 @@ pub fn generate_stubs(
     // neither a type checker nor the package build would find it.
     let module_dir = output.join(project_layout.module_dir());
 
-    if project_layout.python_module.is_some() {
+    if project_layout.has_python() {
         if stubs.len() == 1
             && let Some(stub) = stubs.remove(Path::new("__init__.pyi"))
         {
