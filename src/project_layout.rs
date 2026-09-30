@@ -18,9 +18,12 @@ pub struct ProjectLayout {
     pub project_root: PathBuf,
     /// Contains the absolute path to the python source directory
     pub python_dir: PathBuf,
-    /// Contains the canonicalized (i.e. absolute) path to the python part of the project
-    /// If none, we have a rust crate compiled into a shared library with only some glue python for cffi
-    /// If some, we have a python package that is extended by a native rust module.
+    /// Contains the canonicalized (i.e. absolute) path to the Python package
+    /// that contains the native extension.
+    ///
+    /// This is `None` for pure Rust projects and for mixed projects where the
+    /// extension is a top-level module alongside explicitly configured
+    /// `python-packages`.
     pub python_module: Option<PathBuf>,
     /// Python packages to include
     pub python_packages: Vec<String>,
@@ -398,6 +401,11 @@ impl ProjectResolver {
 }
 
 impl ProjectLayout {
+    /// Whether the project contains Python source code.
+    pub fn has_python(&self) -> bool {
+        self.python_module.is_some() || !self.python_packages.is_empty()
+    }
+
     /// Directory the wheel's contents are resolved against, for a mixed python/rust project.
     ///
     /// `None` for a pure Rust project, where there is no python source tree to be relative to.
@@ -420,6 +428,7 @@ impl ProjectLayout {
                 .strip_prefix(base_path)
                 .unwrap()
                 .to_path_buf(),
+            None if self.has_python() => PathBuf::new(),
             None => PathBuf::from(&self.extension_name),
         }
     }
@@ -495,14 +504,19 @@ impl ProjectLayout {
                     data,
                 })
             } else {
-                if custom_python_source {
+                if custom_python_source && python_packages.is_empty() {
                     bail!(
                         "python-source is set to `{}`, but the python module at `{}` \
-                        does not exist. Either create the Python module or remove the \
-                        `python-source` setting from pyproject.toml.",
+                        does not exist. Either create the Python module, configure \
+                        `python-packages`, or remove the `python-source` setting from \
+                        pyproject.toml.",
                         python_root.display(),
                         python_module.display()
                     );
+                }
+
+                if !python_packages.is_empty() {
+                    eprintln!("🍹 Building a mixed python/rust project");
                 }
 
                 Ok(ProjectLayout {
@@ -526,5 +540,37 @@ impl ProjectLayout {
                 data,
             })
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn top_level_extension_can_use_explicit_python_packages() {
+        let tmp = TempDir::new().unwrap();
+        let project_root = tmp.path();
+        let python_root = project_root.join("src");
+        let package = python_root.join("module");
+        std::fs::create_dir_all(&package).unwrap();
+        std::fs::write(package.join("__init__.py"), "").unwrap();
+
+        let layout = ProjectLayout::determine(
+            project_root,
+            "_module",
+            python_root,
+            vec!["module".to_string()],
+            None,
+            true,
+        )
+        .unwrap();
+
+        assert!(layout.has_python());
+        assert_eq!(layout.python_module, None);
+        assert_eq!(layout.module_dir(), PathBuf::new());
+        assert_eq!(layout.base_path(), None);
     }
 }
