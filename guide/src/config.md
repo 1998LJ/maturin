@@ -90,9 +90,12 @@ include-import-lib = false
 # in venv. This can also be set with the `MATURIN_PEP517_USE_BASE_PYTHON` environment
 # variable.
 use-base-python = false
+# Enable Profile-Guided Optimization (PGO), including for PEP 517 builds
+# such as `pip install`.
+pgo = true
 # Shell command run during Profile-Guided Optimization (PGO) profile generation.
-# Required when building with `--pgo` / `MATURIN_PGO`. Executed in a temporary
-# virtualenv with the instrumented wheel installed.
+# Required when PGO is enabled with `pgo = true`, `--pgo`, or `MATURIN_PGO`.
+# Executed in a temporary virtualenv with the instrumented wheel installed.
 # Example: "python -m pytest tests/benchmarks"
 pgo-command = "python -m pytest tests/benchmarks"
 # Select which Cargo compile targets to build when the crate defines more than
@@ -145,16 +148,24 @@ targets = [
 `name` is required. `kind` is optional; when set it must match one of
 `bin`, `cdylib`, `dylib`, `lib`, `rlib`, or `staticlib`.
 
-#### `pgo-command`
+#### `pgo`
 
-Command used for the profile-training step of Profile-Guided Optimization.
-Required when you pass `--pgo` (or set `MATURIN_PGO`). Maturin runs the command
-in a temporary virtualenv after installing the instrumented wheel.
+Set `pgo = true` to enable Profile-Guided Optimization from
+`pyproject.toml`. This is equivalent to passing `--pgo`, and also applies to
+PEP 517 builds such as `pip install`.
 
 ```toml
 [tool.maturin]
+pgo = true
 pgo-command = "python -m pytest tests/benchmarks"
 ```
+
+#### `pgo-command`
+
+Command used for the profile-training step of Profile-Guided Optimization.
+Required when PGO is enabled with `pgo = true`, `--pgo`, or
+`MATURIN_PGO`. Maturin runs the command in a temporary virtualenv after
+installing the instrumented wheel.
 
 See the `--pgo` option under [Build](./distribution.md) for the overall
 three-phase flow.
