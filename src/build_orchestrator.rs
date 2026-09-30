@@ -783,7 +783,7 @@ impl<'a> BuildOrchestrator<'a> {
                 bail!("You can't define entrypoints yourself for a binary project");
             }
 
-            if self.context.project.project_layout.python_module.is_some() {
+            if self.context.project.project_layout.has_python() {
                 bail!("Sorry, adding python code to a wasm binary is currently not supported")
             }
         }
