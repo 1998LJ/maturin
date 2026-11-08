@@ -304,7 +304,10 @@ fn emit_emscripten_setup(y: &mut Yaml) {
         .line("with:")
         .indent()
         .line(format!("version: {}", gha_expr("env.EMSCRIPTEN_VERSION")))
-        .line("actions-cache-folder: emsdk-cache")
+        // setup-emsdk resolves the cache folder relative to GITHUB_WORKSPACE.
+        // Keep its bundled Python tests outside the checkout so pytest does
+        // not discover the SDK's test suite when generated CI runs pytest.
+        .line("actions-cache-folder: ../emsdk-cache")
         .dedent_by(2)
         .line("- uses: actions/setup-python@v6")
         .indent()

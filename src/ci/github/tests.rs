@@ -171,6 +171,26 @@ fn test_generate_emscripten() {
 }
 
 #[test]
+fn test_generate_emscripten_pytest_keeps_sdk_outside_checkout() {
+    // pytest discovers tests recursively from the project checkout. Emscripten
+    // bundles tests of its own, so the SDK cache must not live in the checkout.
+    let github_config = GitHubCIConfig {
+        pytest: Some(true),
+        emscripten: Some(PlatformCIConfig::default()),
+        ..Default::default()
+    };
+    let conf = render_with_config(
+        &GenerateCI::default(),
+        Some(&github_config),
+        &pyo3_bridge(None),
+        true,
+    );
+    assert!(conf.contains("actions-cache-folder: ../emsdk-cache"));
+    assert!(conf.contains("python -m pytest"));
+    assert!(!conf.contains("actions-cache-folder: emsdk-cache"));
+}
+
+#[test]
 fn test_generate_github_pyproject_simple_targets() {
     let github_config = GitHubCIConfig {
         pytest: Some(false),
